@@ -1,0 +1,22 @@
+{
+  "name": "react-store",
+  "version": "1.0.0",
+  "description": "State Management for React",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["react", "state management"],
+  "author": "cat1989",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^18.3.8",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "react": "^18.3.1"
+  },
+  "files": [
+    "lib"
+  ]
+}
