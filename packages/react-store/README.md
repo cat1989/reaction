@@ -50,9 +50,18 @@ const useStore = createStore({
 const App: React.FC = () => {
     const {
         state,
+        commit,
     } = useStore()
+    const increment = () => {
+        commit("increment")
+    }
     return (
-        <div>{state.count}</div>
+        <section>
+            <div>{state.count}</div>
+            <div>
+                <button onClick={increment}>increment</button>
+            </div>
+        </section>
     )
 }
 ```
