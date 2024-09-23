@@ -1,17 +1,18 @@
 import * as React from 'react'
 
-// https://react.dev/reference/react/useSyncExternalStore
-
-export const createStore = function<State, Mutations extends {
+type Mutations<State> = {
     [key: string]: (state: State, ...payload: any) => void;
-}>({
+}
+
+// https://react.dev/reference/react/useSyncExternalStore
+export const createStore = function<State, M extends Mutations<State>>({
     state: initialState,
     mutations,
 }: {
     state: State;
-    mutations: Mutations;
+    mutations: M;
 }) {
-    type MutationType = keyof Mutations
+    type MutationType = keyof M
     type Payload<T> = T extends (state: State, ...payload: infer P) => void ? P : never
     type Listener = () => void
     let listeners: Listener[] = []
@@ -37,7 +38,7 @@ export const createStore = function<State, Mutations extends {
         const state = React.useSyncExternalStore(store.subscribe, store.getSnapshot)
         return {
             state,
-            commit<T extends MutationType, P extends Payload<Mutations[T]>>(type: T, ...payload: P) {
+            commit<T extends MutationType, P extends Payload<M[T]>>(type: T, ...payload: P) {
                 const newState = {...state}
                 mutations[type](newState, ...payload)
                 store.emit(newState)
