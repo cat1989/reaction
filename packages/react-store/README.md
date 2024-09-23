@@ -33,3 +33,26 @@ const App: React.FC = () => {
     )
 }
 ```
+```tsx
+import { createStore } from 'react-store'
+
+const useStore = createStore({
+    state: {
+        count: 0,
+    },
+    mutations: {
+        increment(state) {
+            state.count++
+        },
+    },
+})
+
+const App: React.FC = () => {
+    const {
+        state,
+    } = useStore()
+    return (
+        <div>{state.count}</div>
+    )
+}
+```
