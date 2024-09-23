@@ -1,30 +1,34 @@
 import * as React from 'react';
-export const createStore = function ({ state, mutations, }) {
-    const Context = React.createContext({
-        state,
-        commit: () => { },
-    });
-    const Store = ({ children, }) => {
-        const [initialState, dispatch] = React.useReducer((state, action) => {
-            const newState = { ...state };
-            const { type, payload, } = action;
-            mutations[type](newState, ...payload);
-            return newState;
-        }, state);
-        const value = {
-            state: initialState,
-            commit: (type, ...payload) => {
-                dispatch({
-                    type,
-                    payload,
-                });
+// https://react.dev/reference/react/useSyncExternalStore
+export const createStore = function ({ state: initialState, mutations, }) {
+    let listeners = [];
+    let state = { ...initialState };
+    const store = {
+        emit(newState) {
+            state = { ...state, ...newState };
+            listeners.forEach((listener) => {
+                listener();
+            });
+        },
+        subscribe(listener) {
+            listeners = [...listeners, listener];
+            return () => {
+                listeners = listeners.filter((l) => l !== listener);
+            };
+        },
+        getSnapshot() {
+            return state;
+        }
+    };
+    return () => {
+        const state = React.useSyncExternalStore(store.subscribe, store.getSnapshot);
+        return {
+            state,
+            commit(type, ...payload) {
+                const newState = { ...state };
+                mutations[type](newState, ...payload);
+                store.emit(newState);
             },
         };
-        return (React.createElement(Context.Provider, { value: value }, children));
-    };
-    const useStore = () => React.useContext(Context);
-    return {
-        Store,
-        useStore,
     };
 };
