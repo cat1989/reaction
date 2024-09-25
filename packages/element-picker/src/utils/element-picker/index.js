@@ -3,10 +3,8 @@ export const ElementPicker = (() => {
     let mousedowned = false
     let mask = null
     const exclude = ['STYLE', 'SCRIPT']
-    const listeners = {
-        done: [],
-    }
-    let unbind = []
+    let listeners = []
+    let onDone = null
     const createMark = ({
         x, y, width, height,
     }) => {
@@ -28,6 +26,47 @@ export const ElementPicker = (() => {
         y: 0,
         width: 0,
         height: 0,
+    }
+    const intersect = (method) => {
+        const results = []
+        ;(function traverse(elements, offset) {
+            Array.from(elements).forEach((element) => {
+                if (exclude.includes(element.tagName)) {
+                    return
+                }
+                const {
+                    top: y,
+                    left: x,
+                    width,
+                    height,
+                } = element.getBoundingClientRect()
+                if (method({...geometry}, {
+                    x: x + offset.left,
+                    y: y + offset.top,
+                    width,
+                    height,
+                }, element)) {
+                    results.push(element)
+                }
+                if (element.children && element.children.length > 0) {
+                    traverse(element.children, offset)
+                }
+                else if (element.tagName === 'IFRAME') {
+                    const {
+                        top,
+                        left,
+                    } = element.contentWindow.frameElement.getBoundingClientRect()
+                    traverse(element.contentWindow.document.body.children, {
+                        top: offset.top + top,
+                        left: offset.left + left,
+                    })
+                }
+            })
+        })(window.document.body.children, {
+            top: 0,
+            left: 0,
+        })
+        return results
     }
     const usePicker = (window) => {
         const getOffset = () => {
@@ -92,9 +131,7 @@ export const ElementPicker = (() => {
                     const y = top + e.y
                     geometry.x = geometry.x < x ? geometry.x : x
                     geometry.y = geometry.y < y ? geometry.y : y
-                    listeners.done.forEach((listener) => {
-                        listener()
-                    })
+                    onDone?.(intersect)
                 }
             }
         }
@@ -108,56 +145,10 @@ export const ElementPicker = (() => {
         }
     }
     return {
-        intersect(method) {
-            const results = []
-            ;(function traverse(elements, offset) {
-                Array.from(elements).forEach((element) => {
-                    if (exclude.includes(element.tagName)) {
-                        return
-                    }
-                    const {
-                        top: y,
-                        left: x,
-                        width,
-                        height,
-                    } = element.getBoundingClientRect()
-                    if (method({...geometry}, {
-                        x: x + offset.left,
-                        y: y + offset.top,
-                        width,
-                        height,
-                    }, element)) {
-                        results.push(element)
-                    }
-                    if (element.children && element.children.length > 0) {
-                        traverse(element.children, offset)
-                    }
-                    else if (element.tagName === 'IFRAME') {
-                        const {
-                            top,
-                            left,
-                        } = element.contentWindow.frameElement.getBoundingClientRect()
-                        traverse(element.contentWindow.document.body.children, {
-                            top: offset.top + top,
-                            left: offset.left + left,
-                        })
-                    }
-                })
-            })(window.document.body.children, {
-                top: 0,
-                left: 0,
-            })
-            return results
-        },
-        on(type, listener) {
-            if (listeners[type]) {
-                listeners[type].push(listener)
-            }
-            return this
-        },
-        enable() {
-            (function use(window) {
-                unbind.push(usePicker(window))
+        enable(callback) {
+            onDone = callback
+            ;(function use(window) {
+                listeners.push(usePicker(window))
                 if (window.frames && window.frames.length > 0) {
                     Array.from(window.frames).forEach(use)
                 }
@@ -165,14 +156,30 @@ export const ElementPicker = (() => {
             return this
         },
         disable() {
-            unbind.forEach((c) => {
-                c()
+            listeners.forEach((listener) => {
+                listener()
             })
-            unbind = []
-            Object.entries(listeners).forEach(([type]) => {
-                listeners[type] = []
-            })
+            listeners = []
+            onDone = null
             return this
         },
     }
 })(window)
+
+export const contain = (src, dest) => {
+    return (
+        src.x + src.width >= dest.x &&
+        src.x <= dest.x + dest.width &&
+        src.y + src.height >= dest.y &&
+        src.y <= dest.y + dest.height
+    )
+}
+
+export const fullContain = (src, dest) => {
+    return (
+        dest.x >= src.x &&
+        dest.x + dest.width <= src.x + src.width &&
+        dest.y >= src.y &&
+        dest.y + dest.height <= src.y + src.height
+    )
+}

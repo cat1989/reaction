@@ -1,18 +1,10 @@
 import * as React from 'react'
-import { ElementPicker } from '../../utils/element-picker'
+import { ElementPicker, contain, fullContain } from '../../utils/element-picker'
 
 export const Index = () => {
     React.useEffect(() => {
-        ElementPicker.enable().on("done", () => {
-            const elements = ElementPicker.intersect((src, dest, { tagName }) => {
-                console.log(tagName, dest)
-                return (
-                    src.x + src.width >= dest.x &&
-                    src.x <= dest.x + dest.width &&
-                    src.y + src.height >= dest.y &&
-                    src.y <= dest.y + dest.height
-                )
-            })
+        ElementPicker.enable((intersect) => {
+            const elements = intersect(fullContain)
             console.log(elements)
         })
         return () => {
